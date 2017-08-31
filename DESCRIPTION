@@ -1,0 +1,16 @@
+Package: CINsim
+Type: Package
+Title: Chromosomal Instability Simulator
+Version: 1.0.0
+Author: Bjorn Bakker <bjornbakker1989@gmail.com>
+Maintainer: Bjorn Bakker <bjornbakker1989@gmail.com>
+Description: Simulation of chromosomal instability in an evolutionary setting.
+Imports: 
+    ggplot2,
+    reshape2,
+    doParallel,
+    foreach,
+    parallel
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.0.1
