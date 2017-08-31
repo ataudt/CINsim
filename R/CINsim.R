@@ -13,7 +13,7 @@
 #' @param karyotypeSelection Whether karyotype selection should take place.
 #' @param minMonosomyLethal The minimum number of monosomies that will cause the cell to die.
 #' @param minNumEuploidChr The minimum number of euploid chromosomes that must remain before the cell dies.
-#' @param downSample The maximum size of the simulated population before down-sampling to 12.5% occurs.
+#' @param downSample The maximum size of the simulated population before down-sampling.
 #' @param maxNumCells The maximum number of (theoretical) cells to simulate before the simulation is terminated.
 #' @param simTitle A custom title linked to the final output when saving to file.
 #' @param saveToFile A logical whether to the final simulation ouput to file.

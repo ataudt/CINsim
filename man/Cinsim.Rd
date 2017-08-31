@@ -34,7 +34,7 @@ Cinsim(karyotypes = NULL, euploidRef = NULL, g = 12, pMisseg = 0.01,
 
 \item{minNumEuploidChr}{The minimum number of euploid chromosomes that must remain before the cell dies.}
 
-\item{downSample}{The maximum size of the simulated population before down-sampling to 12.5% occurs.}
+\item{downSample}{The maximum size of the simulated population before down-sampling.}
 
 \item{maxNumCells}{The maximum number of (theoretical) cells to simulate before the simulation is terminated.}
 
