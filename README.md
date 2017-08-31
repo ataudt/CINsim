@@ -1,0 +1,2 @@
+# CINsim
+Chomosomal instability simulator
