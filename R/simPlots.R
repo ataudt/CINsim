@@ -9,8 +9,13 @@
 
 simPlots <- function(karyoSim, file = NULL) {
 
+    if(class(karyoSim) != "karyoSim") {
+        message("An object of class karyoSim is required")
+        stop
+    }
+
     if(!is.null(file)) {
-      pdf(file = paste0(file, ".pdf"), width = 16.69, height = 8.27)
+        pdf(file = paste0(file, ".pdf"), width = 16.69, height = 8.27)
     }
 
     par(mfrow = c(2, 3), mar = c(5, 5, 2, 5))
@@ -21,24 +26,24 @@ simPlots <- function(karyoSim, file = NULL) {
     plotNumSur$Generation <- 0:(nrow(plotNumSur)-1)
     plotNumSur$numberOfCells <- log(plotNumSur$numberOfCells, 10)
 
-    with(plotNumSur, plot(Generation, fractionSurviving, type = "l",
+    with(plotNumSur, plot(Generation, fractionSurviving, type = "l", lwd = 2,
                           col = "red3", ylab = "Fraction surviving",
                           ylim = c(0, 1)))
     par(new = T)
-    with(plotNumSur, plot(Generation, numberOfCells, type = "l",
+    with(plotNumSur, plot(Generation, numberOfCells, type = "l", lwd = 2,
                           col = "blue3", ylab = NA, xlab = NA, axes = F))
     axis(side = 4)
     mtext(side = 4, line = 3, "Number of cells (10-log)", cex = 0.8)
     legend("bottomright", legend = c("Fraction surviving", "Number of cells"),
-           col = c("red3", "blue3"), lty = c(1, 1), pch = c(NA, NA))
-    title(main = "Fraction surving and cumulative number of cells")
+           col = c("red3", "blue3"), lty = c(1, 1), lwd = c(1, 1), pch = c(NA, NA))
+    title(main = "Fraction of cells surviving and number of cells")
 
     # copy number frequency
     cnFreq(karyoSim, plot = TRUE)
 
     # plot clonality
     if(nrow(karyoSim$clonality) > 1) {
-      plotClonality(karyoSim)
+        plotClonality(karyoSim)
     }
 
     # genome-wide karyotype measures over time
@@ -47,20 +52,20 @@ simPlots <- function(karyoSim, file = NULL) {
     yRangeVector <- seq(from = range(c(aneuploidy, heterogeneity))[1], to = range(c(aneuploidy, heterogeneity))[2], length.out = length(aneuploidy))
     plot(x = 0:(length(aneuploidy)-1), y = yRangeVector, type = "n",
          xlab = "Generation", ylab = "Score",
-         main = "Genome-wide karyotype measures")
+         main = "Genome-wide karyotype measures over time")
     lines(x = 0:(length(aneuploidy)-1), y = aneuploidy,
-          type = "b", col = "blue", lwd = 1, pch = 1, lty = 1)
+          type = "l", col = "blue", lwd = 2, lty = 1)
     lines(x = 0:(length(heterogeneity)-1), y = heterogeneity,
-          type = "b", col = "red", lwd = 1, pch = 2, lty = 2)
-    legend("topleft", pch = c(1, 2), lty = c(1, 2), col = c("blue", "red"),
-           cex = 0.7, legend = c("Aneuploidy", "Heterogeneity"))
+          type = "l", col = "red", lwd = 2, lty = 1)
+    legend("topleft", pch = c(NA, NA), lty = c(1, 1), col = c("blue", "red"),
+           legend = c("Aneuploidy", "Heterogeneity"))
 
     # aneuploidy per chromosome over time
     aneuScores <- karyoSim$aneuploidyPerChromosome
     yRangeVector <- seq(from = range(aneuScores)[1], to = range(aneuScores)[2], length.out = nrow(aneuScores))
     plot(x = 0:(nrow(aneuScores)-1), y = yRangeVector, type = "n",
          xlab = "Generation", ylab = "Aneuploidy score",
-         main = "Aneuploidy score per chromosome")
+         main = "Aneuploidy score per chromosome over time")
     lineCol <- rainbow(n = ncol(aneuScores))
     for(i in 1:ncol(aneuScores)) {
         lines(x = 0:(nrow(aneuScores)-1), y = aneuScores[, i],
@@ -74,7 +79,7 @@ simPlots <- function(karyoSim, file = NULL) {
     yRangeVector <- seq(from = range(hetScores)[1], to = range(hetScores)[2], length.out = nrow(hetScores))
     plot(x = 0:(nrow(hetScores)-1), y = yRangeVector, type = "n",
          xlab = "Generation", ylab = "Heterogeneity score",
-         main = "Heterogeneity score per chromosome")
+         main = "Heterogeneity score per chromosome over time")
     lineCol <- rainbow(n = ncol(hetScores))
     for(i in 1:ncol(hetScores)) {
         lines(x = 0:(nrow(hetScores)-1), y = hetScores[, i],
@@ -84,7 +89,7 @@ simPlots <- function(karyoSim, file = NULL) {
            col = lineCol, legend = as.character(colnames(hetScores)), ncol = 2)
 
     if(!is.null(file)) {
-      dev.off()
+        dev.off()
     }
     par(mfrow = c(1, 1))
 }

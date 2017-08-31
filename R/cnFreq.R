@@ -10,6 +10,12 @@
 
 cnFreq <- function(karyoSim, plot = TRUE) {
 
+    # check user input
+    if(class(karyoSim) != "karyoSim") {
+        message("An object of class karyoSim is required")
+        stop
+    }
+
     # get karyotype data frame
     kldf <- as.data.frame(karyoSim$karyotypeMatrix)
 

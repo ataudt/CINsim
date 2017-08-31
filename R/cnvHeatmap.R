@@ -15,8 +15,9 @@
 cnvHeatmap <- function(karyoSim = NULL, subsetSize = 1000, clones = NULL, file = NULL) {
 
   # check user input
-  if(is.null(karyoSim)) {
-    stop("An object of class karyoSim is required")
+  if(class(karyoSim) != "karyoSim") {
+      message("An object of class karyoSim is required")
+      stop
   }
 
   if(is.null(file)) {

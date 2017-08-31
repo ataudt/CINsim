@@ -357,6 +357,7 @@ Cinsim <- function(karyotypes = NULL,
                        "aneuploidyPerChromosome",
                        "heterogeneityPerChromosome",
                        "clonality")
+  class(karyoSim) <- "karyoSim"
 
   # append probDf if provided
   if(!is.null(probDf)) {

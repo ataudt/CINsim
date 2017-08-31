@@ -9,6 +9,12 @@
 
 plotDevFromMode <- function(karyoSim) {
 
+    # check user input
+    if(class(karyoSim) != "karyoSim") {
+        message("An object of class karyoSim is required")
+        stop
+    }
+
   # get table
   devTable <- devFromMode(karyoSim$karyotypeMatrix)
 
