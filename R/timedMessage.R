@@ -2,6 +2,7 @@
 #'
 #' Sets up a timed message to monitor simulation progression.
 #' @param ... Text for message
+#' @author Aaron Taudt
 
 startTimedMessage <- function(...) {
 
@@ -16,6 +17,8 @@ startTimedMessage <- function(...) {
 #'
 #' Sets up a timed message to monitor simulation progression.
 #' @param ptm A started time message
+#' @author Aaron Taudt
+
 stopTimedMessage <- function(ptm) {
 
 	time <- proc.time() - ptm

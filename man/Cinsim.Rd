@@ -22,6 +22,8 @@ Cinsim(karyotypes = NULL, euploidRef = NULL, g = 12, pMisseg = 0.01,
 
 \item{pMissegG}{A vector of generation numbers during which pMisseg is set at the desired values. Will otherwise default to 0.}
 
+\item{fitMisseg}{A logical whether pMisseg should be fitness-dependent.}
+
 \item{pDivision}{The base probability of cell division.}
 
 \item{fitDivision}{A logical whether pDivision should be karyotype (i.e. fitness) dependent.}

@@ -12,3 +12,6 @@ stopTimedMessage(ptm)
 \description{
 Sets up a timed message to monitor simulation progression.
 }
+\author{
+Aaron Taudt
+}

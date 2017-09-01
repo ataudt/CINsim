@@ -37,12 +37,12 @@ cnvHeatmap <- function(karyoSim = NULL, subsetSize = 1000, clones = NULL, file =
   }
 
   # subset for a particular size
-  if(!is.null(subsetSize)) {
+  if(is.null(subsetSize)) {
+    numCells <- as.character(nrow(kldfPlot))
+  } else {
     subset <- sample(1:nrow(kldfPlot), size = subsetSize, replace = FALSE)
     kldfPlot <- kldfPlot[subset, ]
     numCells <- paste0(length(subset), "/", nrow(karyoSim$karyotypeMatrix))
-  } else {
-    numCells <- nrow(kldfPlot)
   }
 
   # subset a particular clone - rough, optimize
@@ -61,10 +61,10 @@ cnvHeatmap <- function(karyoSim = NULL, subsetSize = 1000, clones = NULL, file =
       } else {
         kldfPlot <- kldfPlotClones
         remove(kldfPlotClones)
-        numCells <- paste0(nrow(kldfPlot), "/", nrow(karyoSim$karyotypeDataFrame))
+        numCells <- paste0(nrow(kldfPlot), "/", nrow(karyoSim$karyotypeMatrix))
       }
     } else {
-      message("Clone IDs not found in list - plotting all clones")
+      message("Some or all clone IDs not found in list - plotting all clones")
     }
   }
 

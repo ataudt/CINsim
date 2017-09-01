@@ -4,6 +4,7 @@
 #'
 #' @param karyoSim A karyoSim object that contains all the required information and metrics.
 #' @param file A file name (without extension) to which the data shall be printed.
+#' @return A plot showing the dynamics in various metrics over time.
 #' @author Bjorn Bakker
 #' @export
 
@@ -24,19 +25,38 @@ simPlots <- function(karyoSim, file = NULL) {
     # survival curves and number of cells
     plotNumSur <- karyoSim$simulationDataFrame[, 1:2]
     plotNumSur$Generation <- 0:(nrow(plotNumSur)-1)
-    plotNumSur$numberOfCells <- log(plotNumSur$numberOfCells, 10)
-
+    plotNumSur$numberOfCells <- plotNumSur$numberOfCells
+    firstYlab <- "Fraction surviving"
+    if(!is.null(karyoSim$simulationDataFrame$meanSurvivalProb)) {
+        meanSurvivalProb <- karyoSim$simulationDataFrame$meanSurvivalProb
+        plotNumSur$meanSurProb <- meanSurvivalProb
+        firstYlab <- "Fraction Surviving | mean pSurvival"
+    }
     with(plotNumSur, plot(Generation, fractionSurviving, type = "l", lwd = 2,
-                          col = "red3", ylab = "Fraction surviving",
+                          col = "red3", ylab = firstYlab,
                           ylim = c(0, 1)))
+    if(!is.null(plotNumSur$meanSurProb)) {
+        par(new = T)
+        with(plotNumSur, plot(Generation, meanSurProb, type = "l", lwd = 2,
+                              col = "darkgreen", ylab = NA, ylim = c(0, 1)))
+    }
     par(new = T)
-    with(plotNumSur, plot(Generation, numberOfCells, type = "l", lwd = 2,
+    with(plotNumSur, plot(Generation, log = "y", numberOfCells, type = "l", lwd = 2,
                           col = "blue3", ylab = NA, xlab = NA, axes = F))
-    axis(side = 4)
-    mtext(side = 4, line = 3, "Number of cells (10-log)", cex = 0.8)
-    legend("bottomright", legend = c("Fraction surviving", "Number of cells"),
-           col = c("red3", "blue3"), lty = c(1, 1), lwd = c(1, 1), pch = c(NA, NA))
-    title(main = "Fraction of cells surviving and number of cells")
+    # create logarithmic ticks for the right y-axis
+    ticks <- seq(0, round(max(log(plotNumSur$numberOfCells, 10)), digits = 0), by=1)
+    labels <- sapply(ticks, function(x) as.expression(bquote(10^ .(x))))
+    axis(4, at=c(10^ticks), labels=labels)
+    mtext(side = 4, line = 3, "Number of cells", cex = 0.8)
+    # conditional legend
+    if(!is.null(plotNumSur$meanSurProb)) {
+        legend("bottomright", legend = c("Fraction surviving", "Mean pSurvival", "Number of cells"),
+               col = c("red3", "darkgreen", "blue3"), lty = c(1, 1, 1), lwd = c(1, 1, 1), pch = c(NA, NA, NA))
+    } else {
+        legend("bottomright", legend = c("Fraction surviving", "Number of cells"),
+               col = c("red3", "blue3"), lty = c(1, 1), lwd = c(1, 1), pch = c(NA, NA))
+    }
+    title(main = "Cell survival and number of cells")
 
     # copy number frequency
     cnFreq(karyoSim, plot = TRUE)

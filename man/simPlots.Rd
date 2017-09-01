@@ -11,6 +11,9 @@ simPlots(karyoSim, file = NULL)
 
 \item{file}{A file name (without extension) to which the data shall be printed.}
 }
+\value{
+A plot showing the dynamics in various metrics over time.
+}
 \description{
 This function will plot various simulation metrics into a single overview. Metrics include the cummulative cell number, fraction of cells surviving per round of cell division, karyotype measures (aneuploidy and heterogeneity), and clonal frequencies when the simulation starting population was greater than 1.
 }

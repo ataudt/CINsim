@@ -7,6 +7,7 @@
 #' @param g The maximum number of generations to be simulated.
 #' @param pMisseg The mis-segregation probability per chromosome copy.
 #' @param pMissegG A vector of generation numbers during which pMisseg is set at the desired values. Will otherwise default to 0.
+#' @param fitMisseg A logical whether pMisseg should be fitness-dependent.
 #' @param pDivision The base probability of cell division.
 #' @param fitDivision A logical whether pDivision should be karyotype (i.e. fitness) dependent.
 #' @param probDf A probability fitness matrix (max 8 rows for the max 8 copy number states).
@@ -221,10 +222,12 @@ Cinsim <- function(karyotypes = NULL,
     if(numSurvivingCells == 0) {
 
       message("No more surviving cells - exiting simulation")
-      j <- j - 1
+      noSurvivors <- TRUE
       break
 
     } else {
+
+      noSurvivors <- FALSE
 
       # sub-select the viable cells
       karyoMat <- karyoMat[viableCells, , drop = FALSE]
@@ -284,9 +287,15 @@ Cinsim <- function(karyotypes = NULL,
   # setting up timed message for parameter compiline
   ptm <- startTimedMessage("Compiling all simulation parameters ...")
 
-  # compile generation specific parameters
-  generationRowNames <- paste0("gen_", 0:j)
+  # modify j if simulation ended prematurely
+  if(noSurvivors) {
+      generationRowNames <- paste0("gen_", 0:j-1)
+      j <- j-2
+  } else {
+      generationRowNames <- paste0("gen_", 0:j)
+  }
 
+  # compile generation specific parameters
   genDataFrame <- data.frame(numberOfCells = numberOfCells[1:(j+1)],
                              fractionSurviving = fractionSurviving[1:(j+1)],
                              numberOfDaughters = numberOfDaughters[1:(j+1)],
@@ -308,7 +317,7 @@ Cinsim <- function(karyotypes = NULL,
   rownames(heterogeneityMat) <- generationRowNames
   colnames(heterogeneityMat) <- chromosomes
 
-  # compule clonality metrics if applicable
+  # compile clonality metrics if applicable
   clonalityMat <- t(clonalityMat[1:(j+1), ])
   colnames(clonalityMat) <- generationRowNames
   rownames(clonalityMat) <- paste0("clone_", 1:sizeInitial)
