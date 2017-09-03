@@ -18,45 +18,33 @@ checkViability <- function(karyotype, minMonosomyLethal, minNumEuploidChr, numbe
     }
     cellSurvival <- NULL
 
-    if(0 %in% karyotype) {
-        cellSurvival <- FALSE
+    chrCounts <- table(as.numeric(karyotype))
+    monosomies <- chrCounts["1"]
+    euploidies <- chrCounts["2"]
+    if(!is.na(chrCounts["0"])) {
+        return(FALSE)
     }
-
-    if(9 %in% karyotype) {
-        cellSurvival <- FALSE
+    if(!is.na(chrCounts["9"])) {
+        return(FALSE)
     }
-
-    if(is.null(cellSurvival)) {
-        chrCounts <- table(as.numeric(karyotype))
-        monosomies <- chrCounts["1"]
-        euploidies <- chrCounts["2"]
-        if(!is.na(monosomies)) {
-            if(monosomies >= minMonosomyLethal) {
-                cellSurvival <- FALSE
-            }
+    if(!is.na(monosomies)) {
+        if(monosomies >= minMonosomyLethal) {
+            return(FALSE)
         }
-        if(!is.na(euploidies)) {
-            if(euploidies < minNumEuploidChr) {
-                cellSurvival <- FALSE
-          }
-        }
-
     }
-
-    if(is.null(cellSurvival)) {
-        if(!is.null(probDf)) {
-            survivalThreshold <- runif(n = 1)
-            pSurvival <- calcSurProb(karyotype, numberOfChromosomes, probDf)
-            if(pSurvival < survivalThreshold) {
-                cellSurvival <- FALSE
-            }
+    if(!is.na(euploidies)) {
+        if(euploidies < minNumEuploidChr) {
+            return(FALSE)
+      }
+    }
+    if(!is.null(probDf)) {
+        survivalThreshold <- runif(n = 1)
+        pSurvival <- calcSurProb(karyotype, numberOfChromosomes, probDf)
+        if(pSurvival < survivalThreshold) {
+            return(FALSE)
         }
     }
 
-    if(is.null(cellSurvival)) {
-        cellSurvival <- TRUE
-    }
-
-    return(cellSurvival)
+    return(TRUE)
 
 }
