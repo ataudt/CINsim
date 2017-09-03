@@ -61,11 +61,6 @@ simPlots <- function(karyoSim, file = NULL) {
     # copy number frequency
     cnFreq(karyoSim, plot = TRUE)
 
-    # plot clonality
-    if(nrow(karyoSim$clonality) > 1) {
-        plotClonality(karyoSim)
-    }
-
     # genome-wide karyotype measures over time
     aneuploidy <- karyoSim$simulationDataFrame$aneuploidy
     heterogeneity <- karyoSim$simulationDataFrame$heterogeneity
@@ -111,5 +106,11 @@ simPlots <- function(karyoSim, file = NULL) {
     if(!is.null(file)) {
         dev.off()
     }
+
+    # plot clonality
+    if(nrow(karyoSim$clonality) > 1) {
+        plotClonality(karyoSim)
+    }
+
     par(mfrow = c(1, 1))
 }

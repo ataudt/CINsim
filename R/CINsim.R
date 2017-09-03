@@ -16,6 +16,7 @@
 #' @param minNumEuploidChr The minimum number of euploid chromosomes that must remain before the cell dies.
 #' @param downSample The maximum size of the simulated population before down-sampling.
 #' @param maxNumCells The maximum number of (theoretical) cells to simulate before the simulation is terminated.
+#' @param saveHistory Whether to save the karyotype matrices of all generations to file.
 #' @param simTitle A custom title linked to the final output when saving to file.
 #' @param saveToFile A logical whether to the final simulation ouput to file.
 #' @param numFreeCPU The number of CPUs to keep free for use when the simulation is running.
@@ -40,6 +41,7 @@ Cinsim <- function(karyotypes = NULL,
                         minNumEuploidChr = 0,
                         downSample = 2.5e+04,
                         maxNumCells = 2e+09,
+                        saveHistory = FALSE,
                         simTitle = "CINsim",
                         saveToFile = FALSE,
                         numFreeCPU = 1) {
@@ -95,6 +97,10 @@ Cinsim <- function(karyotypes = NULL,
 
   kmGenomeWide <- matrix(NA, nrow = g + 1, ncol = 2)
   kmGenomeWide[1, ] <- c(mean(aneuploidyMat[1, ]), mean(heterogeneityMat[1, ]))
+
+  if(saveHistory) {
+    karyoSimHistory <- list(karyoMat)
+  }
 
   # collect mean survival probability if probDf is defined
   if(!is.null(probDf)) {
@@ -264,6 +270,9 @@ Cinsim <- function(karyotypes = NULL,
       if(!is.null(probDf)) {
         meanSurvivalProb[j+1] <- mean(parApply(cl, karyoMat, 1, function(x) {calcSurProb(x, numberOfChromosomes, probDf)}))
       }
+      if(saveHistory) {
+        karyoSimHistory[[j+1]] <- karyoMat
+      }
 
       # set-up clonality tracking if multiple start cells are used
       if(sizeInitial > 1) {
@@ -367,6 +376,12 @@ Cinsim <- function(karyotypes = NULL,
                        "heterogeneityPerChromosome",
                        "clonality")
   class(karyoSim) <- "karyoSim"
+
+  if(saveHistory) {
+    names(karyoSimHistory) <- generationRowNames
+    class(karyoSimHistory) <- "karyoSimHistory"
+    save(karyoSimHistory, file = paste(simTitle, pMisseg, paste0(j, "g"), "karyotype_history.RData", sep = "_"))
+  }
 
   # append probDf if provided
   if(!is.null(probDf)) {

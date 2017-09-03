@@ -21,7 +21,7 @@ doMitosis <- function(karyotype, pMisseg, cellID) {
   # recalculate weighted probabilities
   pChromWeighted <- vector("numeric", numberOfChromosomes)
   for(i in 1:numberOfChromosomes) {
-    pChromWeighted[i] <- 1 - (1 - pMisseg)^(as.numeric(daughterMat[1, i]))
+    pChromWeighted[i] <- 1 - (1 - pMisseg)^(as.numeric(2*daughterMat[1, i]))
     #pChromWeighted[i] <- as.numeric(daughterMat[1, i])*pMisseg
   }
 
