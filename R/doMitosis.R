@@ -44,31 +44,3 @@ doMitosis <- function(karyotype, pMisseg, cellID) {
   return(daughterMat)
 
 }
-
-#' Perform a round of mitosis with possible mis-segregations
-#'
-#' This function will perform mitosis on a given karyotype, apply chromosome mis-segregation events if the criteria are met, and returns a matrix with two new karytoypes.
-#'
-#' @param karyotypes A matrix with cells in rows and chromosomes in colums. Rows and colums must be labelled appropriately.
-#' @param pMissegs A vector of probabilities of mis-segregation per chromosome copy number for each cell.
-#' @return A 2-row matrix with karyotypes from daughter cells.
-#' @author Bjorn Bakker
-#' @export
-
-doMitosis2 <- function(karyotypes, pMissegs) {
-
-  # recalculate weighted probabilities
-  pMissegsMatrix <- array(pMissegs, dim = dim(karyotypes), dimnames = dimnames(karyotypes))
-  pChromWeighted <- 1 - (1 - pMissegsMatrix)^(karyotypes)
-
-  # determine missegregation event per chromosome
-  gainLoss <- array(runif(length(pChromWeighted)) < pChromWeighted, dim = dim(karyotypes), dimnames = dimnames(karyotypes))
-
-  # apply missegregations and setup daughter mat
-  daughterMat <- rbind(karyotypes + gainLoss, karyotypes - gainLoss)
-
-  # return ouput
-  return(daughterMat)
-
-}
->>>>>>> 2f2b30063b28cdd3fef31f4aaed8ffbeda430912
