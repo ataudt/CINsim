@@ -10,41 +10,35 @@
 #' @return A logical, whether the cell survives or not.
 #' @author Bjorn Bakker
 
-checkViability2 <- function(karyotype, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes = NULL, probDf = NULL) {
+checkViability2 <- function(karyotypes, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes = NULL, probDf = NULL) {
 
     # check user input
     if(is.null(numberOfChromosomes)) {
-        numberOfChromosomes <- length(karyotype)
+        numberOfChromosomes <- ncol(karyotypes)
     }
-    cellSurvival <- NULL
+    cellSurvival <- rep(TRUE, nrow(karyotypes))
+    names(cellSurvival) <- rownames(karyotypes)
 
-    chrCounts <- table(as.numeric(karyotype))
-    monosomies <- chrCounts["1"]
-    euploidies <- chrCounts["2"]
-    if(!is.na(chrCounts["0"])) {
-        return(FALSE)
-    }
-    if(!is.na(chrCounts["9"])) {
-        return(FALSE)
-    }
-    if(!is.na(monosomies)) {
-        if(monosomies >= minMonosomyLethal) {
-            return(FALSE)
-        }
-    }
-    if(!is.na(euploidies)) {
-        if(euploidies < minNumEuploidChr) {
-            return(FALSE)
-        }
-    }
+    is0or9 <- apply(karyotypes, 2, function(x) { x == 0 | x == 9 })
+    num0or9 <- rowSums(is0or9)
+
+    isMonosomy <- apply(karyotypes, 2, function(x) { x == 1 })
+    numMonosomy <- rowSums(isMonosomy)
+
+    isEuploid <- apply(karyotypes, 2, function(x) { x == 2 })
+    numEuploid <- rowSums(isEuploid)
+
+    cellSurvival <- (num0or9 == 0) & (numMonosomy < minMonosomyLethal) & (numEuploid >= minNumEuploidChr)
+
     if(!is.null(probDf)) {
-        survivalThreshold <- runif(n = 1)
-        pSurvival <- calcSurProb(karyotype, numberOfChromosomes, probDf)
-        if(pSurvival < survivalThreshold) {
-            return(FALSE)
-        }
+        survivalThreshold <- runif(n = nrow(karyotypes))
+        pSurvival <- calcSurProb2(karyotypes, numberOfChromosomes, probDf)
+
+        survivesProbdf <- pSurvival >= survivalThreshold
+        cellSurvival <- cellSurvival & survivesProbdf
     }
 
-    return(TRUE)
+
+    return(cellSurvival)
 
 }

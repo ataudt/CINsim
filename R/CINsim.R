@@ -7,7 +7,6 @@
 #' @param g The maximum number of generations to be simulated.
 #' @param pMisseg The mis-segregation probability per chromosome copy.
 #' @param pMissegG A vector of generation numbers during which pMisseg is set at the desired values. Will otherwise default to 0.
-#' @param fitMisseg A logical whether pMisseg should be fitness-dependent.
 #' @param pDivision The base probability of cell division.
 #' @param fitDivision A logical whether pDivision should be karyotype (i.e. fitness) dependent.
 #' @param probDf A probability fitness matrix (max 8 rows for the max 8 copy number states).
@@ -16,7 +15,6 @@
 #' @param minNumEuploidChr The minimum number of euploid chromosomes that must remain before the cell dies.
 #' @param downSample The maximum size of the simulated population before down-sampling.
 #' @param maxNumCells The maximum number of (theoretical) cells to simulate before the simulation is terminated.
-#' @param saveHistory Whether to save the karyotype matrices of all generations to file.
 #' @param simTitle A custom title linked to the final output when saving to file.
 #' @param saveToFile A logical whether to the final simulation ouput to file.
 #' @param numFreeCPU The number of CPUs to keep free for use when the simulation is running.
@@ -41,7 +39,6 @@ Cinsim <- function(karyotypes = NULL,
                         minNumEuploidChr = 0,
                         downSample = 2.5e+04,
                         maxNumCells = 2e+09,
-                        saveHistory = FALSE,
                         simTitle = "CINsim",
                         saveToFile = FALSE,
                         numFreeCPU = 1) {
@@ -97,10 +94,6 @@ Cinsim <- function(karyotypes = NULL,
 
   kmGenomeWide <- matrix(NA, nrow = g + 1, ncol = 2)
   kmGenomeWide[1, ] <- c(mean(aneuploidyMat[1, ]), mean(heterogeneityMat[1, ]))
-
-  if(saveHistory) {
-    karyoSimHistory <- list(karyoMat)
-  }
 
   # collect mean survival probability if probDf is defined
   if(!is.null(probDf)) {
@@ -164,7 +157,8 @@ Cinsim <- function(karyotypes = NULL,
         }
       } else {
         if(numCells > 1) {
-          dividers <- parApply(cl, karyoMat, 1, function(x) {return(runif(n = 1) < pDivision)})
+          # dividers <- parApply(cl, karyoMat, 1, function(x) {return(runif(n = 1) < pDivision)})
+          dividers <- runif(n = nrow(karyoMat)) < pDivision
         } else {
           dividers <- runif(n = 1) < pDivision
         }
@@ -184,11 +178,12 @@ Cinsim <- function(karyotypes = NULL,
           pMissegs <- rep(pMisseg, times = numDividers)
         }
 
-        cellIDs <- rownames(karyoMat)
-        karyoMatDividers <- foreach(cell = 1:numDividers,
-                                    .combine = rbind,
-                                    .export = c('doMitosis')) %dopar%
-          doMitosis(karyoMatDividers[cell, , drop = FALSE], pMissegs[cell], cellIDs[cell])
+        # cellIDs <- rownames(karyoMat)
+        # karyoMatDividers <- foreach(cell = 1:numDividers,
+        #                             .combine = rbind,
+        #                             .export = c('doMitosis')) %dopar%
+        #   doMitosis(karyoMatDividers[cell, , drop = FALSE], pMissegs[cell], cellIDs[cell])
+        karyoMatDividers <- doMitosis2(karyoMatDividers, pMissegs)
 
         karyoMat <- rbind(karyoMatNonDividers, karyoMatDividers)
 
@@ -203,11 +198,12 @@ Cinsim <- function(karyotypes = NULL,
         pMissegs <- rep(pMisseg, times = numCells)
       }
 
-      cellIDs <- rownames(karyoMat)
-      karyoMat <- foreach(cell = 1:numCells,
-                          .combine = rbind,
-                          .export = c('doMitosis', 'karyoMat', 'pMissegs', 'cellIDs')) %dopar%
-        doMitosis(karyoMat[cell, , drop = FALSE], pMissegs, cellIDs[cell])
+      # cellIDs <- rownames(karyoMat)
+      # karyoMat <- foreach(cell = 1:numCells,
+      #                     .combine = rbind,
+      #                     .export = c('doMitosis', 'karyoMat', 'pMissegs', 'cellIDs')) %dopar%
+      #   doMitosis(karyoMat[cell, , drop = FALSE], pMissegs, cellIDs[cell])
+      karyoMat <- doMitosis2(karyoMat, pMissegs)
 
     }
 
@@ -216,9 +212,9 @@ Cinsim <- function(karyotypes = NULL,
 
     # remove unviable cells
     if(karyotypeSelection) {
-      viableCells <- unlist(parApply(cl, karyoMat, 1, function(x) {checkViability(x, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes, probDf)}))
+      viableCells <- checkViability2(karyoMat, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes, probDf)
     } else {
-      viableCells <- unlist(parApply(cl, karyoMat, 1, function(x) {checkViability(x, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes)}))
+      viableCells <- checkViability2(karyoMat, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes)
     }
 
     # count the number of viable cells
@@ -228,12 +224,10 @@ Cinsim <- function(karyotypes = NULL,
     if(numSurvivingCells == 0) {
 
       message("No more surviving cells - exiting simulation")
-      noSurvivors <- TRUE
+      j <- j - 1
       break
 
     } else {
-
-      noSurvivors <- FALSE
 
       # sub-select the viable cells
       karyoMat <- karyoMat[viableCells, , drop = FALSE]
@@ -270,9 +264,6 @@ Cinsim <- function(karyotypes = NULL,
       if(!is.null(probDf)) {
         meanSurvivalProb[j+1] <- mean(parApply(cl, karyoMat, 1, function(x) {calcSurProb(x, numberOfChromosomes, probDf)}))
       }
-      if(saveHistory) {
-        karyoSimHistory[[j+1]] <- karyoMat
-      }
 
       # set-up clonality tracking if multiple start cells are used
       if(sizeInitial > 1) {
@@ -296,15 +287,9 @@ Cinsim <- function(karyotypes = NULL,
   # setting up timed message for parameter compiline
   ptm <- startTimedMessage("Compiling all simulation parameters ...")
 
-  # modify j if simulation ended prematurely
-  if(noSurvivors) {
-      generationRowNames <- paste0("gen_", 0:j-1)
-      j <- j-2
-  } else {
-      generationRowNames <- paste0("gen_", 0:j)
-  }
-
   # compile generation specific parameters
+  generationRowNames <- paste0("gen_", 0:j)
+
   genDataFrame <- data.frame(numberOfCells = numberOfCells[1:(j+1)],
                              fractionSurviving = fractionSurviving[1:(j+1)],
                              numberOfDaughters = numberOfDaughters[1:(j+1)],
@@ -326,7 +311,7 @@ Cinsim <- function(karyotypes = NULL,
   rownames(heterogeneityMat) <- generationRowNames
   colnames(heterogeneityMat) <- chromosomes
 
-  # compile clonality metrics if applicable
+  # compule clonality metrics if applicable
   clonalityMat <- t(clonalityMat[1:(j+1), ])
   colnames(clonalityMat) <- generationRowNames
   rownames(clonalityMat) <- paste0("clone_", 1:sizeInitial)
@@ -376,12 +361,6 @@ Cinsim <- function(karyotypes = NULL,
                        "heterogeneityPerChromosome",
                        "clonality")
   class(karyoSim) <- "karyoSim"
-
-  if(saveHistory) {
-    names(karyoSimHistory) <- generationRowNames
-    class(karyoSimHistory) <- "karyoSimHistory"
-    save(karyoSimHistory, file = paste(simTitle, pMisseg, paste0(j, "g"), "karyotype_history.RData", sep = "_"))
-  }
 
   # append probDf if provided
   if(!is.null(probDf)) {

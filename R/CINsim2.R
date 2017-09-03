@@ -98,11 +98,12 @@ Cinsim2 <- function(karyotypes = NULL,
     # collect mean survival probability if probDf is defined
     if(!is.null(probDf)) {
         meanSurvivalProb <- vector("numeric", g + 1)
-        if(sizeInitial > 1) {
-            meanSurvivalProb[1] <- mean(apply(karyoMat, 1, function(x) {calcSurProb(x, numberOfChromosomes, probDf)}))
-        } else {
-            meanSurvivalProb[1] <- calcSurProb(karyoMat, numberOfChromosomes, probDf)
-        }
+        # if(sizeInitial > 1) {
+        #     meanSurvivalProb[1] <- mean(apply(karyoMat, 1, function(x) {calcSurProb(x, numberOfChromosomes, probDf)}))
+            meanSurvivalProb[1] <- mean(calcSurProb2(karyoMat, numberOfChromosomes, probDf))
+        # } else {
+        #     meanSurvivalProb[1] <- calcSurProb(karyoMat, numberOfChromosomes, probDf)
+        # }
     } else {
         meanSurvivalProb <- "undefined"
     }
@@ -113,19 +114,21 @@ Cinsim2 <- function(karyotypes = NULL,
 
     # if pMisseg is fit-dependent, set pMisseg co-efficient
     if(fitMisseg) {
-        euploidRefKaryotype <- rep(euploidRef, times = numberOfChromosomes)
-        pMissegCoef <- calcSurProb(euploidRefKaryotype, numberOfChromosomes, probDf)
+        # euploidRefKaryotype <- rep(euploidRef, times = numberOfChromosomes)
+        # pMissegCoef <- calcSurProb(euploidRefKaryotype, numberOfChromosomes, probDf)
+        euploidRefKaryotype <- matrix(euploidRef, ncol = numberOfChromosomes, nrow = 1)
+        pMissegCoef <- calcSurProb2(euploidRefKaryotype, numberOfChromosomes, probDf)
     } else {
         pMissegCoef <- 1
     }
 
-    # set multi clore processing for improved speed at high cell numbers
-    numCores <- detectCores() - numFreeCPU
-    cl <- makeCluster(numCores)
-    registerDoParallel(cl)
+    # # set multi clore processing for improved speed at high cell numbers
+    # numCores <- detectCores() - numFreeCPU
+    # cl <- makeCluster(numCores)
+    # registerDoParallel(cl)
 
-    clusterExport(cl, varlist = c("calcDivProb", "numberOfChromosomes", "probDf", "pDivision", "checkViability", "calcSurProb",
-                                  "pMisseg", "pMissegCoef", "minMonosomyLethal", "minNumEuploidChr"), envir = environment())
+    # clusterExport(cl, varlist = c("calcDivProb", "numberOfChromosomes", "probDf", "pDivision", "checkViability", "calcSurProb",
+    #                               "pMisseg", "pMissegCoef", "minMonosomyLethal", "minNumEuploidChr"), envir = environment())
 
     stopTimedMessage(ptm)
 
@@ -150,17 +153,9 @@ Cinsim2 <- function(karyotypes = NULL,
 
             # set pDivision as a function of karyotypic fitness
             if(fitDivision) {
-                if(numCells > 1) {
-                    dividers <- parApply(cl, karyoMat, 1, function(x) {return(runif(n = 1) < calcDivProb(x, numberOfChromosomes, probDf))})
-                } else {
-                    dividers <- runif(n = 1) < calcDivProb(karyoMat, numberOfChromosomes, probDf)
-                }
+                dividers <- runif(n = nrow(karyoMat)) < calcDivProb2(karyoMat, numberOfChromosomes, probDf)
             } else {
-                if(numCells > 1) {
-                    dividers <- parApply(cl, karyoMat, 1, function(x) {return(runif(n = 1) < pDivision)})
-                } else {
-                    dividers <- runif(n = 1) < pDivision
-                }
+                dividers <- runif(n = nrow(karyoMat)) < pDivision
             }
             nonDividers <- !(dividers)
             karyoMatDividers <- karyoMat[dividers, , drop = FALSE]
@@ -172,7 +167,7 @@ Cinsim2 <- function(karyotypes = NULL,
 
                 # determine pMisseg when karyotype dependent
                 if(fitMisseg) {
-                    pMissegs <- parApply(cl, karyoMatDividers, 1, function(x) {calcMisseg(x, pMisseg, pMissegCoef, numberOfChromosomes)})
+                    pMissegs <- calcMisseg2(karyoMatDividers, pMisseg, pMissegCoef, numberOfChromosomes)
                 } else {
                     pMissegs <- rep(pMisseg, times = numDividers)
                 }
@@ -192,29 +187,26 @@ Cinsim2 <- function(karyotypes = NULL,
 
             # determine pMisseg when karyotype dependent
             if(fitMisseg) {
-                pMissegs <- parApply(cl, karyoMat, 1, function(x) {calcMisseg(x, pMisseg, pMissegCoef)})
+                pMissegs <- calcMisseg2(karyoMat, pMisseg, pMissegCoef)
             } else {
                 pMissegs <- rep(pMisseg, times = numCells)
             }
 
-            # cellIDs <- rownames(karyoMat)
-            # karyoMat <- foreach(cell = 1:numCells,
-            #                     .combine = rbind,
-            #                     .export = c('doMitosis', 'karyoMat', 'pMissegs', 'cellIDs')) %dopar%
-            #   doMitosis(karyoMat[cell, , drop = FALSE], pMissegs, cellIDs[cell])
             karyoMat <- doMitosis2(karyoMat, pMissegs)
 
         }
+
 
         # determine number of daughters after mitosis
         numDaughters <- nrow(karyoMat)
 
         # remove unviable cells
-        if(karyotypeSelection) {
-            viableCells <- unlist(parApply(cl, karyoMat, 1, function(x) {checkViability2(x, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes, probDf)}))
-        } else {
-            viableCells <- unlist(parApply(cl, karyoMat, 1, function(x) {checkViability2(x, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes)}))
-        }
+        # if(karyotypeSelection) {
+            viableCells <- checkViability2(karyoMat, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes, probDf)
+        # } else {
+        #     viableCells <- checkViability2(karyoMat, minMonosomyLethal, minNumEuploidChr, numberOfChromosomes)
+        # }
+        ## AARON: probDf is NULL in else, so we can go with only one call
 
         # count the number of viable cells
         numSurvivingCells <- sum(viableCells)
@@ -257,11 +249,12 @@ Cinsim2 <- function(karyotypes = NULL,
             numberOfDaughters[j+1] <- numDaughters
             numberOfSurvivors[j+1] <- numSurvivingCells
             aneuploidyMat[j+1, ] <- qAneuploidy(karyoMat, numSurvivingCells, euploidRef)
-            heterogeneityMat[j+1, ] <- qHeterogeneityPar(karyoMat, nrow(karyoMat), cl)
+            # heterogeneityMat[j+1, ] <- qHeterogeneityPar(karyoMat, nrow(karyoMat), cl)
+            heterogeneityMat[j+1, ] <- qHeterogeneity(karyoMat)
             kmGenomeWide[j+1, ] <- c(mean(aneuploidyMat[j+1, ]), mean(heterogeneityMat[j+1, ]))
             clonalityMat[j+1, ] <- calcClonality(karyoMat, sizeInitial)
             if(!is.null(probDf)) {
-                meanSurvivalProb[j+1] <- mean(parApply(cl, karyoMat, 1, function(x) {calcSurProb(x, numberOfChromosomes, probDf)}))
+                meanSurvivalProb[j+1] <- mean(calcSurProb2(karyoMat, numberOfChromosomes, probDf))
             }
 
             # set-up clonality tracking if multiple start cells are used
@@ -375,7 +368,7 @@ Cinsim2 <- function(karyotypes = NULL,
     time1 <- proc.time() - time0
     message("==| Simulation complete - final time: ", round(time1[3], 2), "s |==")
 
-    stopImplicitCluster()
+    # stopImplicitCluster()
     return(karyoSim)
 
 }
